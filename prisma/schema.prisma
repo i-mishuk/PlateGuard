@@ -1,0 +1,101 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  inventoryItems InventoryItem[]
+  wasteRecords   WasteRecord[]
+}
+
+model Category {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  inventoryItems InventoryItem[]
+}
+
+model InventoryItem {
+  id          String    @id @default(cuid())
+  name        String
+  description String?
+  quantity    Float
+  unit        String
+  price       Float     // in BDT
+  expiryDate  DateTime?
+  categoryId  String
+  userId      String
+  status      ItemStatus @default(AVAILABLE)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  category     Category       @relation(fields: [categoryId], references: [id])
+  user         User           @relation(fields: [userId], references: [id])
+  wasteRecords WasteRecord[]
+}
+
+model WasteRecord {
+  id          String      @id @default(cuid())
+  itemId      String
+  userId      String
+  quantity    Float
+  reason      WasteReason
+  cost        Float       // wasted cost in BDT
+  date        DateTime    @default(now())
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  
+  item InventoryItem @relation(fields: [itemId], references: [id])
+  user User           @relation(fields: [userId], references: [id])
+}
+
+model Settings {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  USER
+}
+
+enum ItemStatus {
+  AVAILABLE
+  EXPIRED
+  WASTED
+  LOW_STOCK
+}
+
+enum WasteReason {
+  EXPIRED
+  DAMAGED
+  OVERSTOCK
+  PREPARATION
+  OTHER
+}
